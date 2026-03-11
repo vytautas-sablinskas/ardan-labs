@@ -15,10 +15,33 @@ type Item struct {
 	Y int64
 }
 
+type Key byte
+
+const (
+	Copper Key = iota + 1
+	Jade
+	Crystal
+)
+
 type Player struct {
 	Name string
-	Keys []string
+	Keys []Key
+	X    int64
+	Y    int64
 	Item // embeded struct
+}
+
+func (k Key) String() string {
+	switch k {
+	case Copper:
+		return "copper"
+	case Jade:
+		return "jade"
+	case Crystal:
+		return "crystal"
+	default:
+		return fmt.Sprintf("unknown key - %d", k)
+	}
 }
 
 func main() {
@@ -58,24 +81,28 @@ func main() {
 	p1.Move(100, 200)
 	fmt.Printf("p1: %#v\n", p1)
 
-	err = p1.Found("jade")
+	err = p1.Found(Jade)
 	if err != nil {
 		fmt.Println("err:", err)
 	}
-	err = p1.Found("incorrect")
+	err = p1.Found(Key(0))
 	if err != nil {
 		fmt.Println("err:", err)
 	}
-	err = p1.Found("jade")
+	err = p1.Found(Jade)
 	if err != nil {
 		fmt.Println("err:", err)
 	}
-	err = p1.Found("copper")
+	err = p1.Found(Copper)
 	if err != nil {
 		fmt.Println("err:", err)
 	}
 
 	fmt.Println(p1.Keys)
+
+	moveAll([]Mover{&p1, &i}, 10, 20)
+	fmt.Printf("p1.X - %d, p1.Y - %d\n", p1.X, p1.Y)
+	fmt.Printf("i.X - %d, i.Y - %d\n", i.X, i.Y)
 }
 
 func NewItem(x, y int64) (Item, error) {
@@ -101,17 +128,32 @@ func (i *Item) Move(dx, dy int64) {
 }
 
 // Exercise, error if key is not one of "jade", "copper", "crystal". Should add key only once
-func (p *Player) Found(key string) error {
-	validKeys := []string{"jade", "copper", "crystal"}
+func (p *Player) Found(key Key) error {
+	validKeys := []Key{Copper, Crystal, Jade}
 	if !slices.Contains(validKeys, key) {
-		return fmt.Errorf("Invalid key: %s", key)
+		return fmt.Errorf("Invalid key: %s", key.String())
 	}
 
 	if slices.Contains(p.Keys, key) {
-		return fmt.Errorf("Key was already found: %s", key)
+		return fmt.Errorf("Key was already found: %s", key.String())
 	}
 
 	p.Keys = append(p.Keys, key)
 
 	return nil
+}
+
+func (p *Player) Move(dx, dy int64) {
+	p.X += dx
+	p.Y += dy
+}
+
+type Mover interface {
+	Move(dx, dy int64)
+}
+
+func moveAll(movers []Mover, dx, dy int64) {
+	for _, m := range movers {
+		m.Move(dx, dy)
+	}
 }
